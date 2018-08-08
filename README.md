@@ -1,6 +1,7 @@
 # FEATURES
 
-* Install.bat script for easy setup
+* Cross-platform: the same release artifact works on Windows, Linux, Mac, BSD, Solaris, etc.
+* Install.bat script for easy setup on Windows
 * Simple to use, works just like other commands
 * Finds location of non-ASCII characters
 * Shows the non-ASCII characters that are found
@@ -76,7 +77,7 @@ or
 This program only works on the command line. You won't be able to
 see the output if you double click it from the desktop.
 
-## Check for Javer
+## Check for Java
 
 You must have Java 1.5 or greater installed and on your PATH. On
 Windows, the Java installation automatically puts java in your
