@@ -30,7 +30,7 @@ public class FindNonAsciiCharacters {
                 for (char c : bytes) {
                     columnCount++;
                     if (c > 127) {
-                        System.out.printf("%s: Non-ASCII character %c on line %d%n", fileName, c, lineCount);
+                        System.out.printf("%s:%d character='%c' code=%d%n", fileName, lineCount, c, (int) c);
                     }
                 }
             }
