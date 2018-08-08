@@ -1,7 +1,7 @@
 # FEATURES
 
 * Cross-platform: the same release artifact works on Windows, Linux, Mac, BSD, Solaris, etc.
-* Install.bat script for easy setup
+* Install.bat script for easy setup on Windows
 * Simple to use, works just like other commands
 * Finds location of non-ASCII characters
 * Shows the non-ASCII characters that are found
