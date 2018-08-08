@@ -35,7 +35,7 @@ test-data.txt:529,1282: char='文' code=25991 bytes=[e6 96 87]
 
 # PROPER INSTALLATION
 
-* Download the latest release from the above Releases tab.
+* Download the latest release from the above `release` tab.
 * Unzip the archive on your machine.
 * Run the install.bat script.
 * You're now ready to run `find-non-ascii`.
