@@ -43,5 +43,14 @@ copy "%MY_DIR%%APP_NAME%.jar" "%USERPROFILE%\lib"
 echo Adding %USERPROFILE%\bin to PATH.
 "%MY_DIR%add-to-path" "%USERPROFILE%\bin"
 
+rem Pause if started from Windows Explorer so that the Command Prompt
+rem doesn't disappear before the user can read it.
+for /f "tokens=2" %%a in ("%CMDCMDLINE%") do (
+    if "%%a"=="/c" (
+        echo Installation of %APP_NAME% has finished.
+        pause
+    )
+)
+
 :END
 endlocal
