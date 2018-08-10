@@ -51,15 +51,22 @@ public class FindNonAsciiCharacters {
                 Character.isValidCodePoint(code);
                 if (code > Character.MAX_VALUE) {
                     String message = "The character value is too big to store in a char: ";
-		    message += code;
-		    message += " at " + lineNum + ":" + columnNum;
+                    message += code;
+                    message += " at " + lineNum + ":" + columnNum;
                     throw new IOException(message);
                 }
                 // Now it is safe to cast c to char because of the above check.
                 char c = (char) code;
                 // Check for surrogate.
-		if (Character.isSurrogate(c)) {
-		}
+                if (Character.isSurrogate(c)) {
+                	char c2 = (char) reader.read();
+                	if (Character.isSurrogatePair(c2, c)) {
+                		Character.toCodePoint(c2, c);
+                	}
+                	else {
+                		throw new IOException("Bad surrogate pair: " + c + "," + c2);
+                	}
+                }
 
                 System.out.printf("%s:%d:%d character='%c' code=%d bytes=%s%n", fileName, lineNum, columnNum, c, (int) c, Arrays.toString(utf8bytes));
             }
