@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 
 public class FindNonAsciiCharacters {
-    
+
     protected Charset UTF8 = Charset.forName("UTF-8");
 
     /**
@@ -17,8 +17,7 @@ public class FindNonAsciiCharacters {
         try {
             FindNonAsciiCharacters finder = new FindNonAsciiCharacters();
             finder.find(args);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -29,8 +28,7 @@ public class FindNonAsciiCharacters {
             try {
                 reader = new InputStreamReader(new FileInputStream(fileName), UTF8);
                 find(reader, fileName);
-            }
-            finally {
+            } finally {
                 close(reader);
             }
         }
@@ -57,19 +55,17 @@ public class FindNonAsciiCharacters {
                 }
                 // Now it is safe to cast c to char because of the above check.
                 char c = (char) code;
-		int codePoint;
+                int codePoint;
                 // Check for surrogate.
                 if (Character.isSurrogate(c)) {
-                	char c2 = (char) reader.read();
-                	if (Character.isSurrogatePair(c2, c)) {
-                		codePoint = Character.toCodePoint(c2, c);
-                	}
-			else if (Character.isCurrogatePair(c, c2)) {
-				codePoint = Character.toCodePoint(c, c2);
-			}
-                	else {
-                		throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
-                	}
+                    char c2 = (char) reader.read();
+                    if (Character.isSurrogatePair(c2, c)) {
+                        codePoint = Character.toCodePoint(c2, c);
+                    } else if (Character.isSurrogatePair(c, c2)) {
+                        codePoint = Character.toCodePoint(c, c2);
+                    } else {
+                        throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
+                    }
                 }
 
                 System.out.printf("%s:%d:%d character='%c' code=%d bytes=%s%n", fileName, lineNum, columnNum, c, (int) c, Arrays.toString(utf8bytes));
@@ -82,12 +78,12 @@ public class FindNonAsciiCharacters {
         byte[] utf8Bytes = s.getBytes(UTF8);
         return utf8Bytes;
     }
+
     protected void close(Reader r) {
         if (r != null) {
             try {
                 r.close();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
