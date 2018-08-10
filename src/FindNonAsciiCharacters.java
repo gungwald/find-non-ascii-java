@@ -39,21 +39,28 @@ public class FindNonAsciiCharacters {
     protected void find(Reader reader, String fileName) throws IOException {
         int lineNum = 0;
         int columnNum = 0;
-        int c;
-        while ((c = reader.read()) != -1) {
+        int code;
+        while ((code = reader.read()) != -1) {
             columnNum++;
-            if (c == '\n') {
+            if (code == '\n') {
                 columnNum = 0;
                 lineNum++;
             }
-            if (c > 127) {
-                byte[] utf8bytes = String.valueOf(c).getBytes(UTF8);
-                Character.isValidCodePoint(c);
-                if (c > Character.MAX_VALUE) {
-                    throw new IOException("The character value read is too big to store in a char: " + c);
+            if (code > 127) {
+                byte[] utf8bytes = String.valueOf(code).getBytes(UTF8);
+                Character.isValidCodePoint(code);
+                if (code > Character.MAX_VALUE) {
+                    String message = "The character value is too big to store in a char: ";
+		    message += code;
+		    message += " at " + lineNum + ":" + columnNum;
+                    throw new IOException(message);
                 }
                 // Now it is safe to cast c to char because of the above check.
+                char c = (char) code;
                 // Check for surrogate.
+		if (Character.isSurrogate(c)) {
+		}
+
                 System.out.printf("%s:%d:%d character='%c' code=%d bytes=%s%n", fileName, lineNum, columnNum, c, (int) c, Arrays.toString(utf8bytes));
             }
         }
