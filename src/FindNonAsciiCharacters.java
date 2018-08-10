@@ -57,14 +57,18 @@ public class FindNonAsciiCharacters {
                 }
                 // Now it is safe to cast c to char because of the above check.
                 char c = (char) code;
+		int codePoint;
                 // Check for surrogate.
                 if (Character.isSurrogate(c)) {
                 	char c2 = (char) reader.read();
                 	if (Character.isSurrogatePair(c2, c)) {
-                		Character.toCodePoint(c2, c);
+                		codePoint = Character.toCodePoint(c2, c);
                 	}
+			else if (Character.isCurrogatePair(c, c2)) {
+				codePoint = Character.toCodePoint(c, c2);
+			}
                 	else {
-                		throw new IOException("Bad surrogate pair: " + c + "," + c2);
+                		throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
                 	}
                 }
 
