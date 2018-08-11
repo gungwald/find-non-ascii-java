@@ -15,8 +15,15 @@ public class FindNonAsciiCharacters {
      */
     public static void main(String[] args) {
         try {
-            FindNonAsciiCharacters finder = new FindNonAsciiCharacters();
-            finder.find(args);
+        	if (args[0].equals("-l")) {
+	        	for (String name : Charset.availableCharsets().keySet()) {
+	        		System.out.println(name);
+	        	}
+        	}
+        	else {
+	            FindNonAsciiCharacters finder = new FindNonAsciiCharacters();
+	            finder.find(args);
+        	}
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -55,7 +62,7 @@ public class FindNonAsciiCharacters {
                 }
                 // Now it is safe to cast c to char because of the above check.
                 char c = (char) code;
-                int codePoint;
+                int codePoint = code;
                 // Check for surrogate.
                 if (Character.isSurrogate(c)) {
                     char c2 = (char) reader.read();
@@ -67,8 +74,7 @@ public class FindNonAsciiCharacters {
                         throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
                     }
                 }
-
-                System.out.printf("%s:%d:%d character='%c' code=%d bytes=%s%n", fileName, lineNum, columnNum, c, (int) c, Arrays.toString(utf8bytes));
+                System.out.printf("%s:%d:%d character='%c' code=%d bytes=%s%n", fileName, lineNum, columnNum, c, (int) codePoint, Arrays.toString(utf8bytes));
             }
         }
     }

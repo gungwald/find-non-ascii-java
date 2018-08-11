@@ -7,13 +7,13 @@ then
 fi
 LIB_DIR=$(dirname "$MY_DIR")/lib
 # Search for our runnable jar in my directory and ..\lib.
-for JAR in "$MY_DIR$MY_NAME.jar" "$LIB_DIR/$MY_NAME.jar"
+for JAR in "$MY_DIR/$MY_NAME.jar" "$LIB_DIR/$MY_NAME.jar"
 do
     if [ -f "$JAR" ]
     then
         exec java -jar "$JAR" "$@"
     fi
 done
-rem If we got here, we failed.
+# If we got here, we failed.
 echo Couldn\'t find runnable jar file $MY_NAME.jar.
 
