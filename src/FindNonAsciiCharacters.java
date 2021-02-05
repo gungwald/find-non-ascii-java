@@ -137,9 +137,9 @@ public class FindNonAsciiCharacters {
                     }
                 }
 		if (printFileName) {
-			System.out.printf("%s", fileName);
-                	System.out.printf("%d:%d character='%c' codePoint=%d bytes=%s%n", lineNum, columnNum, c, codePoint, Arrays.toString(utf8bytes));
+			System.out.printf("%s:", fileName);
 		}
+                System.out.printf("%d:%d character='%c' codePoint=%d bytes=%s%n", lineNum, columnNum, c, codePoint, Arrays.toString(utf8bytes));
             }
         }
     }
