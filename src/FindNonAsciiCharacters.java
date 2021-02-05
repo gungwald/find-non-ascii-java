@@ -18,6 +18,7 @@ public class FindNonAsciiCharacters {
 
     private Charset charset = Charset.defaultCharset();
     private PrintWriter out;
+    private boolean printFileName = false;
 
     /**
      * @param args
@@ -47,6 +48,9 @@ public class FindNonAsciiCharacters {
 				usage();
 				return;
 			}
+			else if (arg.equals("-f")) {
+				printFileName = true;
+			}
 			else {
 				fileNames.add(arg);
 			}
@@ -56,6 +60,7 @@ public class FindNonAsciiCharacters {
 
 	private void usage() {
 		System.out.println("find-non-ascii -h | -l | [ -c Charset ] [ file1 file2 ... ] ");
+		System.out.println("\t-f	Print input file name with each character found");
 		System.out.println("\t-h	Show help");
 		System.out.println("\t-l	List all character set names");
 		System.out.println("\tfiles	A list of files to examine, can be empty to read stdin");
@@ -74,14 +79,14 @@ public class FindNonAsciiCharacters {
 			}
 		}
 		else {
-	        for (String fileName : fileNames) {
-	        	File f = new File(fileName);
-	            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(f), charset)) {
-	                find(reader, f.getName());
-	            }
-	        }
+			for (String fileName : fileNames) {
+				File f = new File(fileName);
+				try (InputStreamReader reader = new InputStreamReader(new FileInputStream(f), charset)) {
+					find(reader, f.getName());
+				}
+			}
 		}
-    }
+	}
 
 	protected void printf(String format, Object ...stuff) {
 		if (out == null) {
@@ -131,7 +136,10 @@ public class FindNonAsciiCharacters {
                         throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
                     }
                 }
-                System.out.printf("%s:%d:%d character='%c' codePoint=%d bytes=%s%n", fileName, lineNum, columnNum, c, codePoint, Arrays.toString(utf8bytes));
+		if (printFileName) {
+			System.out.printf("%s", fileName);
+                	System.out.printf("%d:%d character='%c' codePoint=%d bytes=%s%n", lineNum, columnNum, c, codePoint, Arrays.toString(utf8bytes));
+		}
             }
         }
     }
