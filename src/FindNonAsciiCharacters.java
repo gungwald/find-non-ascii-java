@@ -1,24 +1,28 @@
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * find-special-chars.jar
- * 
+ *
  * @author bill
  */
 public class FindNonAsciiCharacters {
 
+    public static final int MAX_ASCII = 127;
+
     private Charset charset = Charset.defaultCharset();
-    private PrintWriter out;
-    private boolean printFileName = false;
+    private boolean searchedForCharacterGetNameMethod = false;
+    private Method characterGetNameMethod = null;
 
     /**
      * @param args
@@ -26,122 +30,237 @@ public class FindNonAsciiCharacters {
     public static void main(String[] args) {
         try {
             FindNonAsciiCharacters finder = new FindNonAsciiCharacters();
-            finder.findCommandLineArguments(args);
-        } catch (Exception e) {
+            List<String> fileNames = finder.processSwitches(args);
+            finder.find(fileNames);
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void findCommandLineArguments(String[] args) throws IOException {
-		List<String> fileNames = new ArrayList<String>();
-		for (int i = 0; i < args.length; i++) {
-			String arg = args[i];
-			if (arg.equals("-l")) {
-				listCharsets();
-				return;
-			}
-			else if (arg.equals("-c")) {
-				charset = Charset.forName(args[++i]);
-				//System.setOut(new PrintStream(System.out, true, charset.name()));
-			}
-			else if (arg.equals("-h") || arg.equals("-help") || arg.equals("--help") || arg.equals("/?")) {
-				usage();
-				return;
-			}
-			else if (arg.equals("-f")) {
-				printFileName = true;
-			}
-			else {
-				fileNames.add(arg);
-			}
-		}
-		find(fileNames);
-	}
-
-	private void usage() {
-		System.out.println("find-non-ascii -h | -l | [ -c Charset ] [ file1 file2 ... ] ");
-		System.out.println("\t-f	Print input file name with each character found");
-		System.out.println("\t-h	Show help");
-		System.out.println("\t-l	List all character set names");
-		System.out.println("\tfiles	A list of files to examine, can be empty to read stdin");
-	}
-
-	private void listCharsets() {
-    	for (String name : Charset.availableCharsets().keySet()) {
-    		System.out.println(name);
-    	}
-	}
-
-	protected void find(List<String> fileNames) throws IOException {
-		if (fileNames.size() == 0) {
-			try (InputStreamReader reader = new InputStreamReader(System.in, charset)) {
-				find(reader, "stdin");
-			}
-		}
-		else {
-			for (String fileName : fileNames) {
-				File f = new File(fileName);
-				try (InputStreamReader reader = new InputStreamReader(new FileInputStream(f), charset)) {
-					find(reader, f.getName());
-				}
-			}
-		}
-	}
-
-	protected void printf(String format, Object ...stuff) {
-		if (out == null) {
-			if (charset == Charset.defaultCharset()) {
-				out = new PrintWriter(System.out);
-			}
-			else {
-				out = new PrintWriter(new OutputStreamWriter(System.out, charset));
-			}
-		}
-		out.printf(format, stuff);
-	}
-	
-    protected void find(InputStreamReader reader, String fileName) throws IOException {
-    	if (! reader.getEncoding().equalsIgnoreCase("UTF8")) {
-    		System.out.printf("WARNING: Input character set is %s, not UTF-8. Use the command line arguments '-c UTF-8' to set it to UTF-8.%n", reader.getEncoding());
-    	}
-        int lineNum = 0;
-        int columnNum = 0;
-        int code;
-        while ((code = reader.read()) != -1) {
-            columnNum++;
-            if (code == '\n') {
-                columnNum = 0;
-                lineNum++;
+    private List<String> processSwitches(String[] args) throws IOException {
+        List<String> fileNames = new ArrayList<String>();
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg.equals("-l")) {
+                listCharsets();
+                return fileNames;
             }
-            if (code > 127) {
-                byte[] utf8bytes = String.valueOf(code).getBytes(charset);
-                Character.isValidCodePoint(code);
-                if (code > Character.MAX_VALUE) {
-                    String message = "The character value is too big to store in a char: ";
-                    message += code;
-                    message += " at " + lineNum + ":" + columnNum;
-                    throw new IOException(message);
+            else if (arg.equals("-c")) {
+                charset = Charset.forName(args[++i]);
+                //System.setOut(new PrintStream(System.out, true, charset.name()));
+            }
+            else if (arg.equals("-h") || arg.equals("-help") || arg.equals("--help") || arg.equals("/?")) {
+                usage();
+                return fileNames;
+            }
+            else {
+                fileNames.add(arg);
+            }
+        }
+        if (! charset.name().equals("UTF-8")) {
+            System.out.printf("WARNING: Expecting the input to be encoded as %s.%n", charset.name());
+            System.out.printf("WARNING: If this does not match the actual character set of the input,%n");
+            System.out.printf("WARNING: re-run with the -c switch to specify the correct character set.%n");
+        }
+        return fileNames;
+    }
+
+    private void usage() {
+        System.out.println("find-non-ascii -h | -l | [ -c Charset ] [ file1 file2 ... ] ");
+        System.out.println("  -c Charset Assume the input is encoded in the given Charset");
+        System.out.println("  -h         Show help");
+        System.out.println("  -l         List the names of all Charsets that can be specified by -c");
+        System.out.println("  files      A list of files to examine. Use a dash to read stdin");
+    }
+
+    private void listCharsets() {
+        for (String name : Charset.availableCharsets().keySet()) {
+            System.out.println(name);
+        }
+    }
+
+    protected void find(List<String> fileNames) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+        if (fileNames.size() == 0) {
+            usage();
+            return;
+        }
+        else {
+            for (String fileName : fileNames) {
+                if (fileName.equals("-")) {
+                    find(System.in, fileName);
                 }
-                // Now it is safe to cast c to char because of the above check.
-                char c = (char) code;
-                int codePoint = code;
-                // Check for surrogate.
-                if (Character.isSurrogate(c)) {
-                    char c2 = (char) reader.read();
-                    if (Character.isSurrogatePair(c2, c)) {
-                        codePoint = Character.toCodePoint(c2, c);
-                    } else if (Character.isSurrogatePair(c, c2)) {
-                        codePoint = Character.toCodePoint(c, c2);
-                    } else {
-                        throw new IOException("Bad surrogate pair: firstRead=" + c + ", secondRead=" + c2);
-                    }
+                else {
+                    find(new FileInputStream(fileName), fileName);
                 }
-		if (printFileName) {
-			System.out.printf("%s:", fileName);
-		}
-                System.out.printf("%d:%d character='%c' codePoint=%d bytes=%s%n", lineNum, columnNum, c, codePoint, Arrays.toString(utf8bytes));
             }
         }
     }
 
+    protected void find(InputStream in, String fileName) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+        InputStreamReader reader = new InputStreamReader(in, charset);
+        find(reader, fileName);
+    }
+
+    protected void find(Reader reader, String fileName) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+        System.out.print(" LINE  COLUMN  CHAR\tCODEPOINT  BYTES");
+        if (characterGetNameMethodExists()) {
+            System.out.println("                NAME");
+        }
+        else {
+            System.out.println();
+        }
+        BufferedReader lineReader = null;
+        try {
+            lineReader = new BufferedReader(reader);
+            int lineNumber = 0;
+            String line;
+            while ((line = lineReader.readLine()) != null) {
+                lineNumber++;
+                char[] lineAsCharArray = line.toCharArray();
+                int physicalCharCountForLogicalChar = 0;
+                for (int i = 0; i < lineAsCharArray.length; i += physicalCharCountForLogicalChar) {
+                    // This handles surrogate pairs automatically which is why it is being used.
+                    int logicalCharCodePoint = Character.codePointAt(lineAsCharArray, i);
+                    physicalCharCountForLogicalChar = Character.charCount(logicalCharCodePoint);
+                    if (! isASCII(logicalCharCodePoint)) {
+                        reportCharacter(logicalCharCodePoint, lineNumber, i, line, fileName);
+                    }
+                }
+            }
+        }
+        finally {
+            if (! fileName.equals("-")) {
+                close(lineReader);
+            }
+        }
+    }
+
+    public boolean isASCII(int codePoint) {
+        return codePoint <= MAX_ASCII;
+    }
+
+    protected void reportCharacter(int codePoint, int lineNumber,
+                                   int columnNumber, String line, String fileName) throws UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+
+        // UTF-16 representation including surrogates
+        char[] physicalChars = Character.toChars(codePoint);
+        // One logical char for possibly multiple physical chars
+        String logicalChar = String.valueOf(physicalChars);
+        // An explanation of what it is
+        String logicalCharUnicodeName = getUnicodeName(codePoint);
+        // The byte representation for the requested charset.
+        byte[] physicalBytes = logicalChar.getBytes(charset.name());
+
+        String codePointString = makePrintable(codePoint);
+        //String physicalCharsString = makePrintable(physicalChars);
+        String physicalBytesString = makePrintable(physicalBytes);
+
+        // %s with a field width is right-justified by default. A minus
+        // left-justified. If a field width is not specified it appears
+        // left-justified but since there's no width, it's really just
+        // printed left to right.
+        //
+        // The max number of bytes in a UTF-8 char is 4 hence the %-19s.
+        //
+        // The position of the first 3 fields and the tab are critical.
+        // The problem is that the logicalChar can take up 0 to 2 cells
+        // on the console/terminal screen. There is no way to know
+        // in the code how long it is going to be as it is always just
+        // 1 character regardless of how the output looks. I believe it
+        // depends on the font that is being used for the console/terminal.
+        // For a terminal app, there is no way to get the font. So, to
+        // compensate, a tab is used to provide a variable width space
+        // between fields 3 and 4. But that only works if for spaces less
+        // than 8 characters because a tab is 8 or less characters.
+        System.out.printf("%5d  %5d    %s\t%8s   %-19s", lineNumber,
+        columnNumber, logicalChar, codePointString,
+        physicalBytesString);
+        if (logicalCharUnicodeName == null) {
+            System.out.println();
+        }
+        else {
+            System.out.printf("  %s%n", logicalCharUnicodeName);
+        }
+    }
+
+    /**
+     * Only way to get formatting right.
+     */
+    public String makePrintable(int codePoint) {
+        StringBuilder s = new StringBuilder();
+        s.append("U+");
+        s.append(String.format("%04X", codePoint));
+        return s.toString();
+    }
+
+    /**
+     * Arrays.toString makes the individual values negative in some versions
+     * of Java. So, this is done instead.
+     */
+    public String makePrintable(byte[] bytes) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            s.append("0x");
+            // Append the byte value as a 0-padded hex number with 2 digits.
+            s.append(String.format("%02X", bytes[i]));
+            s.append(',');
+        }
+        s.deleteCharAt(s.length() - 1);
+        return s.toString();
+    }
+
+    /**
+     * Arrays.toString makes string with the actual character glyph instead of
+     * a numeric value. So, this is done instead.
+     */
+    public String makePrintable(char[] chars) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < chars.length; i++) {
+            // Append the byte value as a 0-padded hex number with 4 digits.
+            s.append("0x");
+            s.append(String.format("%04X", (int) chars[i]));
+            s.append(',');
+        }
+        s.deleteCharAt(s.length() - 1);
+        return s.toString();
+    }
+
+    public boolean characterGetNameMethodExists() {
+        return getCharacterGetNameMethod() != null;
+    }
+
+    public Method getCharacterGetNameMethod() {
+        if (! searchedForCharacterGetNameMethod) {
+            try {
+                characterGetNameMethod = Character.class.getMethod("getName", int.class);
+            }
+            catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+            searchedForCharacterGetNameMethod = true;
+        }
+        return characterGetNameMethod;
+    }
+
+    public String getUnicodeName(int codePoint) throws IllegalAccessException, InvocationTargetException {
+        String name = null;
+        Method method = getCharacterGetNameMethod();
+        if (method != null) {
+            // The null parameter to invoke is for a static method.
+            name = (String) method.invoke(null, Integer.valueOf(codePoint));
+        }
+        return name;
+    }
+
+    public void close(Reader r) {
+        if (r != null) {
+            try {
+                r.close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
