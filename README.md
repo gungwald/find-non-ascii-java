@@ -104,3 +104,4 @@ Solaris comes with a working java installed and on the PATH
 because they created it.
 
 TODO - Mac & BSD
+mvn assembly:single
