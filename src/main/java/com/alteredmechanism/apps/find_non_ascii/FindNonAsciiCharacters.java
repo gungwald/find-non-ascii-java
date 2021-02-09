@@ -41,7 +41,7 @@ public class FindNonAsciiCharacters {
         }
     }
 
-    private List<String> processSwitches(String[] args) throws IOException {
+    private List<String> processSwitches(String[] args) throws IOException, InterruptedException {
         List<String> fileNames = new ArrayList<String>();
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];

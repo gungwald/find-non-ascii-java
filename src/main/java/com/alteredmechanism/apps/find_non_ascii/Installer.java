@@ -15,7 +15,6 @@ public class Installer {
     public void install(File sourceDir) throws IOException, InterruptedException {
         in = new BufferedReader(new InputStreamReader(System.in));
         File installDir;
-        File defaultInstallDir;
         System.out.println("FIND-NON-ASCII INSTALLER");
         boolean systemInstall = choice("Install for all users? You must have admin rights.");
         installDir = new File(choiceString("Enter install directory", 
