@@ -7,31 +7,36 @@
 
 <project name="find-non-ascii" default="dist-zip" basedir=".">
 
-	<echo message="java.home=${java.home}"/>
+    <echo message="java.home=${java.home}"/>
 
-    <property name="main.class" value="FindNonAsciiCharacters" />
+    <property name="main.class" value="com.alteredmechanism.apps.find_non_ascii.FindNonAsciiCharacters" />
     <property name="version" value="2.0.0" />
-    <property name="src.dir" value="src/" />
-    <property name="cls.dir" value="classes" />
-    <property name="jar" value="dist/${ant.project.name}.jar" />
-    <property name="dist.zip" value="${ant.project.name}-${version}.zip" />
+    <property name="src.dir" value="src/main/java" />
+    <property name="res.dir" value="src/main/resources" />
+    <property name="scripts.dir" value="src/main/scripts" />
+    <property name="target.dir" value="target" />
+    <property name="cls.dir" value="${target.dir}/classes" />
+    <property name="assemble.dir" value="${target.dir}/assemble" />
+    <property name="jar" value="${target.dir}/${ant.project.name}.jar" />
+    <property name="dist.zip" value="${target.dir}/${ant.project.name}-${version}.zip" />
+
 
     <target name="compile" description="Compiles the source">
-        <mkdir dir="classes" />
+        <mkdir dir="${cls.dir}" />
 	<javac srcdir="${src.dir}" destdir="${cls.dir}" classpath="${cls.dir}" 
 		debug="on" includeAntRuntime="false" />
     </target>
 
     <target name="copy.res" description="Copy resources">
         <copy todir="${cls.dir}">
-            <fileset dir="resources">
+            <fileset dir="${res.dir}">
                 <include name="**/*" />
             </fileset>
         </copy>
     </target>
 
     <target name="setup">
-        <mkdir dir="dist"/>
+        <mkdir dir="${target.dir}"/>
     </target>
     
     <target name="jar" depends="compile" description="Builds an executable jar file">
@@ -47,13 +52,15 @@
 
     <target name="dist-zip" depends="jar" 
 	    description="Builds a zip file for distribution to end users">
-        <copy todir="dist">
-            <fileset dir="scripts">
+        <copy todir="${assemble.dir}">
+            <fileset dir="${scripts.dir}">
                 <include name="**/*"/>
             </fileset>
         </copy>
+	<copy file="${jar}" todir="${assemble.dir}"/>
+
         <zip destfile="${dist.zip}">
-            <fileset dir="dist">
+            <fileset dir="${assemble.dir}">
                 <include name="**/*"/>
             </fileset>
             <fileset dir=".">
@@ -65,18 +72,14 @@
     <target name="unix-install" description="Installs runnable files to local system">
         <!-- The copy command does not preserve the execute permissions. -->
         <exec executable="cp">
-            <arg value="scripts/find-non-ascii"/>
+            <arg value="${scripts.dir}/find-non-ascii"/>
             <arg value="/usr/local/bin"/>
         </exec>
 	<copy file="${jar}" todir="/usr/local/share/java"/>
     </target>
 
     <target name="clean">
-        <delete dir="${cls.dir}" verbose="true" />
-        <delete dir="dist" verbose="true" />
-        <delete verbose="true">
-            <fileset dir="." includes="${ant.project.name}-*.zip" />
-        </delete>
+        <delete dir="${target.dir}" verbose="true" />
     </target>
 
 </project>

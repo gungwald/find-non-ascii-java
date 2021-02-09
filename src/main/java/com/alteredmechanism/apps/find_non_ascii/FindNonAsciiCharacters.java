@@ -1,9 +1,12 @@
+package com.alteredmechanism.apps.find_non_ascii;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
@@ -54,6 +57,20 @@ public class FindNonAsciiCharacters {
                 usage();
                 return fileNames;
             }
+            else if (arg.equals("-i")) {
+                int nextArgIndex = i + 1;
+                if (nextArgIndex < args.length) {
+                    String nextArg = args[nextArgIndex];
+                    Installer installer = new Installer();
+                    installer.install(new File(nextArg));
+                    System.exit(0);
+                }
+                else {
+                    System.err.println("The -i install switch requires a parameter that specifies ");
+                    System.err.println("the location of the install files.");
+                    System.exit(1);
+                }
+            }
             else {
                 fileNames.add(arg);
             }
@@ -80,7 +97,8 @@ public class FindNonAsciiCharacters {
         }
     }
 
-    protected void find(List<String> fileNames) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+    protected void find(List<String> fileNames) throws IOException, UnsupportedEncodingException,
+    IllegalAccessException, InvocationTargetException {
         if (fileNames.size() == 0) {
             usage();
             return;
@@ -97,12 +115,14 @@ public class FindNonAsciiCharacters {
         }
     }
 
-    protected void find(InputStream in, String fileName) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+    protected void find(InputStream in, String fileName) throws IOException,
+    UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
         InputStreamReader reader = new InputStreamReader(in, charset);
         find(reader, fileName);
     }
 
-    protected void find(Reader reader, String fileName) throws IOException, UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+    protected void find(Reader reader, String fileName) throws IOException,
+    UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
         System.out.print(" LINE  COLUMN  CHAR\tCODEPOINT  BYTES");
         if (characterGetNameMethodExists()) {
             System.out.println("                NAME");
@@ -141,7 +161,8 @@ public class FindNonAsciiCharacters {
     }
 
     protected void reportCharacter(int codePoint, int lineNumber,
-                                   int columnNumber, String line, String fileName) throws UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
+                                   int columnNumber, String line, String fileName) throws UnsupportedEncodingException,
+    IllegalAccessException, InvocationTargetException {
 
         // UTF-16 representation including surrogates
         char[] physicalChars = Character.toChars(codePoint);
@@ -243,7 +264,8 @@ public class FindNonAsciiCharacters {
         return characterGetNameMethod;
     }
 
-    public String getUnicodeName(int codePoint) throws IllegalAccessException, InvocationTargetException {
+    public String getUnicodeName(int codePoint) throws IllegalAccessException,
+    InvocationTargetException {
         String name = null;
         Method method = getCharacterGetNameMethod();
         if (method != null) {
