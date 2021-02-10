@@ -124,15 +124,9 @@ public class FindNonAsciiCharacters {
     }
 
     protected void find(Reader reader, String fileName) throws IOException,
-    UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
-        System.out.print(" LINE  COLUMN  CHAR\tCODEPOINT  BYTES");
-        if (characterGetNameMethodExists()) {
-            System.out.println("                NAME");
-        }
-        else {
-            System.out.println();
-        }
+                        UnsupportedEncodingException, IllegalAccessException, InvocationTargetException {
         BufferedReader lineReader = null;
+        boolean printedTitles = false;
         try {
             lineReader = new BufferedReader(reader);
             int lineNumber = 0;
@@ -146,6 +140,10 @@ public class FindNonAsciiCharacters {
                     int logicalCharCodePoint = Character.codePointAt(lineAsCharArray, i);
                     physicalCharCountForLogicalChar = Character.charCount(logicalCharCodePoint);
                     if (! isASCII(logicalCharCodePoint)) {
+                        if (! printedTitles) {
+                            printTitles();
+                            printedTitles = true;
+                        }
                         reportCharacter(logicalCharCodePoint, lineNumber, i, line, fileName);
                     }
                 }
@@ -158,13 +156,24 @@ public class FindNonAsciiCharacters {
         }
     }
 
+    public void printTitles() {
+        System.out.print(" LINE  COLUMN  CHAR\tCODEPOINT  BYTES");
+        if (characterGetNameMethodExists()) {
+            System.out.println("                NAME");
+        }
+        else {
+            System.out.println();
+        }
+    }
+
     public boolean isASCII(int codePoint) {
         return codePoint <= MAX_ASCII;
     }
 
     protected void reportCharacter(int codePoint, int lineNumber,
-                                   int columnNumber, String line, String fileName) throws UnsupportedEncodingException,
-    IllegalAccessException, InvocationTargetException {
+                                   int columnNumber, String line, String fileName) 
+                                    throws UnsupportedEncodingException,
+                                    IllegalAccessException, InvocationTargetException {
 
         // UTF-16 representation including surrogates
         char[] physicalChars = Character.toChars(codePoint);
@@ -196,11 +205,10 @@ public class FindNonAsciiCharacters {
         // compensate, a tab is used to provide a variable width space
         // between fields 3 and 4. But that only works if for spaces less
         // than 8 characters because a tab is 8 or less characters.
-        System.out.printf("%5d  %5d    %s\t%8s   %-19s", lineNumber,
-        columnNumber, logicalChar, codePointString,
-        physicalBytesString);
+        System.out.printf("%5d  %5d    %s\t%8s   %-19s", lineNumber, columnNumber, 
+                          logicalChar, codePointString, physicalBytesString);
         if (logicalCharUnicodeName == null) {
-            System.out.println();
+            System.out.printf("%n");
         }
         else {
             System.out.printf("  %s%n", logicalCharUnicodeName);
@@ -259,7 +267,7 @@ public class FindNonAsciiCharacters {
                 characterGetNameMethod = Character.class.getMethod("getName", int.class);
             }
             catch (NoSuchMethodException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
             searchedForCharacterGetNameMethod = true;
         }

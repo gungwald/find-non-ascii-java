@@ -38,7 +38,7 @@ public class Installer {
         if (userResponse == null || userResponse.equalsIgnoreCase("q")) {
             System.exit(0);
         }
-        choice = userResponse.equals("") ? defaultResonse : userResponse;
+        choice = userResponse.equals("") ? defaultResponse : userResponse;
         return choice;
     }
 
@@ -116,7 +116,7 @@ public class Installer {
             File f = sourceFiles.get(i);
             if (f.getName().endsWith(".jar")) {
                 copyFile(f, jarDestinationDir);
-            
+            }
             else {
                 copyFile(f, scriptDestinationDir);
                 makeExecutable(new File(scriptDestinationDir, f.getName()));
