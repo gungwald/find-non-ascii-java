@@ -55,6 +55,7 @@
         <copy todir="${assemble.dir}">
             <fileset dir="${scripts.dir}">
                 <include name="**/*"/>
+                <exclude name=".*.swp"/>
             </fileset>
         </copy>
 	<copy file="${jar}" todir="${assemble.dir}"/>

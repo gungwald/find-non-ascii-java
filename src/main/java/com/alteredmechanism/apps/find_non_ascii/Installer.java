@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.io.FileFilter;
 import java.io.File;
 import java.io.IOException;
@@ -23,14 +24,7 @@ public class Installer {
     }
 
     public File getDefaultInstallDir(boolean systemInstall) {
-        File dir;
-        if (systemInstall) {
-            dir = getDefaultSystemInstallDir();
-        }
-        else {
-            dir = getDefaultUserInstallDir();
-        }
-        return dir;
+        return systemInstall ? getDefaultSystemInstallDir() : getDefaultUserInstallDir();
     }
 
     public String choiceString(String prompt, String defaultResponse) throws IOException {
@@ -41,40 +35,24 @@ public class Installer {
         System.out.print(defaultResponse);
         System.out.print("] ");
         userResponse = in.readLine();
-        if (userResponse == null) {
+        if (userResponse == null || userResponse.equalsIgnoreCase("q")) {
             System.exit(0);
         }
-        if (userResponse.equals("q")) {
-            System.exit(0);
-        }
-        if (userResponse.equals("")) {
-            choice = defaultResponse;
-        }
-        else {
-            choice = userResponse;
-        }
+        choice = userResponse.equals("") ? defaultResonse : userResponse;
         return choice;
     }
 
     public boolean choice(String prompt) throws IOException {
-        String userResponse = "";
-        boolean choice = false;
-        while (! userResponse.equals("y") && ! userResponse.equals("n")) {
-            System.out.print(prompt);
-            System.out.print(" (y/n/q) ");
+        String userResponse;
+        do {
+            System.out.printf("%s (y/n/q) ", prompt);
             userResponse = in.readLine();
-            if (userResponse == null) {
+            if (userResponse == null || userResponse.equalsIgnoreCase("q")) {
                 System.exit(0);
             }
             userResponse = userResponse.toLowerCase();
-            if (userResponse.equals("q")) {
-                System.exit(0);
-            }
-        }
-        if (userResponse.equals("y")) {
-            choice = true;
-        }
-        return choice;
+        } while (! userResponse.equals("y") && ! userResponse.equals("n"));
+        return userResponse.equals("y");
     }
 
     public boolean isWindows() {
@@ -82,26 +60,12 @@ public class Installer {
     }
 
     public File getDefaultSystemInstallDir() {
-        String dir;
-        if (isWindows()) {
-            dir = "C:\\Program Files\\Find Non-ASCII";
-        }
-        else {
-            dir = "/usr/local";
-        }
-        return new File(dir);
+        return new File(isWindows() ? "C:\\Program Files\\Find Non-ASCII" : "/usr/local");
     }
 
     public File getDefaultUserInstallDir() {
-        String dir;
         String home = System.getProperty("user.home");
-        if (isWindows()) {
-            dir = home + "\\Program Files\\Find Non-ASCII";
-        }
-        else {
-            dir = home + "/.local";
-        }
-        return new File(dir);
+        return new File(isWindows() ? home + "\\Program Files\\Find Non-ASCII" : home + "/.local");
     }
 
     public List<File> selectSourceFiles(File sourceDir) {
@@ -114,8 +78,7 @@ public class Installer {
         }
         File jar = findFirstJar(sourceDir);
         if (jar == null) {
-            System.err.println("Could not find jar in directory " 
-                + sourceDir.getAbsolutePath());
+            System.err.println("Could not find jar in directory: " + sourceDir.getAbsolutePath());
             System.exit(1);
         }
         else {
@@ -126,14 +89,19 @@ public class Installer {
 
     class JarFileFilter implements FileFilter {
         public boolean accept(File pathname) {
-            return pathname.getName().toLowerCase().endsWith(".jar");
+            boolean accept = pathname.getName().toLowerCase().endsWith(".jar");
+            System.out.printf("JarFileFilter.accept: pathname=%s returning=%b%n", pathname, accept);
+            return accept;
         }
     }
 
     public File findFirstJar(File dir) {
         FileFilter jarFilter = new JarFileFilter();
         File[] jars = dir.listFiles(jarFilter);
-        if (jars.length > 1) {
+        System.out.printf("findFirstJar: jars=%s%n", Arrays.asList(jars));
+        System.out.printf("findFirstJar: jars.length=%d%n", jars.length);
+        if (jars.length > 0) {
+            System.out.printf("findFirstJar: jars[0]=%s%n", jars[0].getAbsolutePath());
             return jars[0];
         }
         else {
@@ -142,33 +110,45 @@ public class Installer {
     }
 
     public void copyFiles(List<File> sourceFiles, File targetDir) throws IOException, InterruptedException {
-        File jarDestination = new File(targetDir, "share/java");
-        File scriptDestination = new File(targetDir, "bin");
+        File jarDestinationDir = new File(targetDir, "share/java");
+        File scriptDestinationDir = new File(targetDir, "bin");
         for (int i = 0; i < sourceFiles.size(); i++) {
             File f = sourceFiles.get(i);
             if (f.getName().endsWith(".jar")) {
-                copyFile(f, jarDestination);
-            }
+                copyFile(f, jarDestinationDir);
+            
             else {
-                copyFile(f, scriptDestination);
+                copyFile(f, scriptDestinationDir);
+                makeExecutable(new File(scriptDestinationDir, f.getName()));
             }
         }
     }
 
-    public void copyFile(File f, File destination) throws IOException, InterruptedException {
-        String copy;
-        if (isWindows()) {
-            copy = "copy";
+    public void copyFile(File f, File destDir) throws IOException, InterruptedException {
+        mkdir(destDir);
+        String copy = isWindows() ? "copy" : "cp";
+        System.out.printf("Copying %s to %s%n", f.getName(), destDir.getAbsolutePath());
+        Executor.exec(new String[] {copy, f.getAbsolutePath(), destDir.getAbsolutePath()});
+    }
+
+    public void mkdir(File dir) {
+        if (! dir.exists()) {
+            if (! dir.mkdirs()) {
+                System.err.printf("Failed to create directory: %s%n", dir.getAbsolutePath());
+                System.exit(1);
+            }
         }
-        else {
-            copy = "cp";
+        else if (! dir.isDirectory()) {
+            System.err.printf("Required directory already exists as a regular file: %s%n", 
+                dir.getAbsolutePath());
+            System.exit(1);
         }
-        String[] cmd = new String[3];
-        cmd[0] = copy;
-        cmd[1] = f.getAbsolutePath();
-        cmd[3] = destination.getAbsolutePath();
-        System.out.printf("Copying %s to %s%n", f.getName(), destination.getAbsolutePath());
-        Executor.exec(cmd);
+    }
+
+    public void makeExecutable(File f) throws IOException, InterruptedException {
+        if (! isWindows()) {
+            Executor.exec(new String[] {"chmod", "a+x", f.getAbsolutePath()});
+        }
     }
 
 }

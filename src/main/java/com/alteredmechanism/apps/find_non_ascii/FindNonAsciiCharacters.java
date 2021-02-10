@@ -84,10 +84,12 @@ public class FindNonAsciiCharacters {
     }
 
     private void usage() {
-        System.out.println("find-non-ascii -h | -l | [ -c Charset ] [ file1 file2 ... ] ");
+        System.out.println("find-non-ascii -i | -u | -h | -l | [-c Charset] [file1 file2 ...]");
         System.out.println("  -c Charset Assume the input is encoded in the given Charset");
         System.out.println("  -h         Show help");
+        System.out.println("  -i         Install the program");
         System.out.println("  -l         List the names of all Charsets that can be specified by -c");
+        System.out.println("  -u         Uninstall the program");
         System.out.println("  files      A list of files to examine. Use a dash to read stdin");
     }
 
