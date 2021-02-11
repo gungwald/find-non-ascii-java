@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * find-special-chars.jar
+ * find-non-ascii.jar
  *
  * @author bill
  */

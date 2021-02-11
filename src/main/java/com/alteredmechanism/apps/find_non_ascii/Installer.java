@@ -26,6 +26,20 @@ public class Installer {
     public File getDefaultInstallDir(boolean systemInstall) {
         return systemInstall ? getDefaultSystemInstallDir() : getDefaultUserInstallDir();
     }
+    
+    public int menu(String title, String[] choices) throws IOException {
+    	String userResponse;
+    	int selectedIndex;
+    	do {
+    		System.out.println(title);
+    		for (int i = 0; i < choices.length; i++) {
+    			System.out.printf("%d. %s%n", i, choices[i]);
+    		}
+    		userResponse = in.readLine();
+    		selectedIndex = Integer.parseInt(userResponse);
+    	} while (selectedIndex < 0 && choices.length <= selectedIndex);
+    	return selectedIndex;
+    }
 
     public String choiceString(String prompt, String defaultResponse) throws IOException {
         String userResponse;

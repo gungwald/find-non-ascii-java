@@ -4,3 +4,4 @@
 *.zip
 *.swp
 target/
+.DS_Store
